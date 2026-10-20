@@ -1,5 +1,7 @@
 # NEXUS
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23511710.svg)](https://doi.org/10.5281/zenodo.23511710)
+
 NEXUS is a deterministic, dependency-free Rust engine for **centre-transit
 fields** and the evidence pipeline around them. A logical field of arbitrary
 cardinality is represented by a bounded set of strands. Each strand runs from
