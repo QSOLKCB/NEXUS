@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- Reject unused CLI options, extra positional arguments and nonfinite benchmark checksums.
+- Reject overflowing transit angles, invalid audio tables and frequency underflow.
+- Validate census marginals and malformed counts without arithmetic panics.
+- Fix large-ring partner overflow and align increment wrapping with WGSL.
+- Bound GPU counts and read back only the requested census regions.
+- Account for CPU quotas; exclude failed timings and reject empty audit comparisons.
+- Restore upload omissions with CI, ignore rules and executable script modes.
+- Add a dependency-free WebGL cuboctahedron explorer, Rust/browser parity checks,
+  GitHub Pages deployment workflow and review documentation.
+
 ## 1.0.0
 
 First release of this implementation. It is a clean rewrite and shares no

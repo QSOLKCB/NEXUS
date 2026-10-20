@@ -123,21 +123,36 @@ impl AtlasCensus {
 
     /// Structural validity.
     pub fn validate(&self) -> Result<()> {
-        let classified = self.count - self.nexus;
-        if self.initial.iter().sum::<u64>() != classified
-            || self.final_state.iter().sum::<u64>() != classified
-            || self.families.iter().sum::<u64>() != classified
-            || self.quadrants.iter().sum::<u64>() != classified
+        let classified = self
+            .count
+            .checked_sub(self.nexus)
+            .ok_or(Error::Lattice("nexus count exceeds sample count"))?;
+        let sum = |bins: &[u64]| bins.iter().map(|&v| u128::from(v)).sum::<u128>();
+        if sum(&self.initial) != u128::from(classified)
+            || sum(&self.final_state) != u128::from(classified)
+            || sum(&self.families) != u128::from(classified)
+            || sum(&self.quadrants) != u128::from(classified)
             || self.coherence > classified
         {
             return Err(Error::Lattice("atlas census totals disagree"));
+        }
+        for family in 0..3 {
+            if sum(&self.final_state[family * 4..family * 4 + 4]) != u128::from(self.families[family]) {
+                return Err(Error::Lattice("atlas family histogram disagrees with directions"));
+            }
+        }
+        for quadrant in 0..4 {
+            let total: u128 = (0..3).map(|f| u128::from(self.final_state[f * 4 + quadrant])).sum();
+            if total != u128::from(self.quadrants[quadrant]) {
+                return Err(Error::Lattice("atlas quadrant histogram disagrees with directions"));
+            }
         }
         Ok(())
     }
 
     /// Coherence as a fraction of classified samples.
     pub fn coherence_ratio(&self) -> f64 {
-        let classified = self.count - self.nexus;
+        let classified = self.count.saturating_sub(self.nexus);
         if classified == 0 {
             0.0
         } else {

@@ -9,7 +9,7 @@
 //! parallel audits must agree exactly; the parallel path shards strands over
 //! workers and reduces maxima.
 
-use crate::error::Result;
+use crate::error::{Error, Result};
 use crate::exec::effective_workers;
 use crate::field::{Field, Ordering};
 use crate::transit::{eversion, position};
@@ -120,6 +120,24 @@ fn audit_range(field: &Field, ordering: Ordering, start: u32, end: u32) -> Resul
         let endpoint = (start_pos.x - strand.ingress.x)
             .hypot(start_pos.y - strand.ingress.y)
             .max((end_pos.x - strand.egress.x).hypot(end_pos.y - strand.egress.y));
+        if [
+            radius,
+            antipodal,
+            nexus,
+            endpoint,
+            start_pos.x,
+            start_pos.y,
+            end_pos.x,
+            end_pos.y,
+        ]
+        .iter()
+        .any(|v| !v.is_finite())
+        {
+            return Err(Error::Spec {
+                name: "geometry",
+                requirement: "must produce finite coordinates and audit deviations",
+            });
+        }
         if let Some(prev) = previous {
             let gap = strand.logical.abs_diff(prev);
             partial.gap_min = partial.gap_min.min(gap);

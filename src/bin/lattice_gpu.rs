@@ -38,6 +38,7 @@ fn main() -> ExitCode {
 
 struct Options {
     positional: Vec<String>,
+    supplied: Vec<String>,
     rounds: Option<u32>,
     seed: u32,
 }
@@ -45,6 +46,7 @@ struct Options {
 fn parse(raw: &[String]) -> Result<Options, String> {
     let mut options = Options {
         positional: Vec::new(),
+        supplied: Vec::new(),
         rounds: None,
         seed: DEFAULT_SEED,
     };
@@ -53,11 +55,13 @@ fn parse(raw: &[String]) -> Result<Options, String> {
         match raw[i].as_str() {
             "--rounds" => {
                 let v = raw.get(i + 1).ok_or("missing value after --rounds")?;
+                options.supplied.push("rounds".into());
                 options.rounds = Some(v.parse().map_err(|_| format!("invalid rounds `{v}`"))?);
                 i += 2;
             }
             "--seed" => {
                 let v = raw.get(i + 1).ok_or("missing value after --seed")?;
+                options.supplied.push("seed".into());
                 options.seed = v.parse().map_err(|_| format!("invalid seed `{v}`"))?;
                 i += 2;
             }
@@ -69,6 +73,24 @@ fn parse(raw: &[String]) -> Result<Options, String> {
         }
     }
     Ok(options)
+}
+
+fn validate_command(command: &str, options: &Options) -> Result<(), String> {
+    let (min, max, allowed): (usize, usize, &[&str]) = match command {
+        "verify" => (0, 1, &["rounds", "seed"]),
+        "run" | "lattice" | "benchmark" => (2, 2, &["seed"]),
+        "info" | "help" | "--help" | "-h" => (0, 0, &[]),
+        _ => return Ok(()),
+    };
+    if !(min..=max).contains(&options.positional.len()) {
+        return Err(format!("{command} expects {min}..={max} positional arguments"));
+    }
+    for name in &options.supplied {
+        if !allowed.contains(&name.as_str()) {
+            return Err(format!("--{name} is not supported by {command}"));
+        }
+    }
+    Ok(())
 }
 
 fn number<T: std::str::FromStr>(options: &Options, slot: usize, name: &str) -> Result<T, String> {
@@ -113,6 +135,7 @@ fn dispatch() -> Result<(), String> {
         return Ok(());
     };
     let options = parse(&raw[1..])?;
+    validate_command(command, &options)?;
     match command.as_str() {
         "info" => {
             let start = Instant::now();
@@ -214,5 +237,21 @@ fn dispatch() -> Result<(), String> {
             Ok(())
         }
         other => Err(format!("unknown command `{other}`")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn ignored_options_and_extra_arguments_are_rejected_before_device_access() {
+        for (command, raw) in [
+            ("info", vec!["--seed", "1"]),
+            ("verify", vec!["2", "64"]),
+            ("run", vec!["2", "1", "--rounds", "64"]),
+        ] {
+            let args: Vec<String> = raw.into_iter().map(str::to_string).collect();
+            assert!(validate_command(command, &parse(&args).unwrap()).is_err());
+        }
     }
 }

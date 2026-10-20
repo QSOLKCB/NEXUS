@@ -14,6 +14,10 @@ compares its census exactly with the CPU reference.
 | `census_pass` | one workgroup per cell | atomics into a 65-word region |
 | `compare_pass` | one invocation per register | counts registers that differ from the seed |
 
+Requests are also bounded by `cells <= floor(u32::MAX / 24)` (and must be
+even), so shader census counts and register indices cannot wrap. Actual
+adapter buffer limits can impose a smaller bound.
+
 Two storage buffers hold the state (96 bytes per cell). Rounds alternate the
 roles of the buffers. Per-round parameters live in one uniform buffer with a
 dynamic offset per slot, so a complete forward (and inverse) schedule is

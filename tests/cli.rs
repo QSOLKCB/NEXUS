@@ -138,3 +138,24 @@ fn invalid_input_fails_with_context() {
     let stderr = String::from_utf8(output.stderr).unwrap();
     assert!(stderr.contains("even"));
 }
+
+#[test]
+fn ignored_arguments_cannot_silently_change_an_experiment() {
+    for args in [
+        vec!["lattice-verify", "2", "64"],
+        vec!["lattice-run", "2", "1", "--rounds", "64"],
+        vec!["audit", "--seed", "7"],
+        vec!["sweep", "--strands", "2"],
+    ] {
+        assert!(!nexus(&args).status.success(), "{args:?}");
+    }
+}
+
+#[test]
+fn nonfinite_benchmark_checksum_is_an_error_not_invalid_json() {
+    let output = nexus(&["bench", "1", "--strands", "2", "--phase", "1e308", "--json"]);
+    assert!(!output.status.success());
+    assert!(String::from_utf8(output.stderr)
+        .unwrap()
+        .contains("checksum overflowed"));
+}

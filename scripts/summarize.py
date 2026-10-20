@@ -2,6 +2,7 @@
 """Generate REPORT.md and summary CSVs from raw evidence. No manual numbers."""
 import csv
 import json
+import math
 import re
 import statistics
 import sys
@@ -29,22 +30,48 @@ def performance(results: Path) -> list[dict]:
     groups: dict[str, list[float]] = {}
     exec_groups: dict[tuple[str, str], list[float]] = {}
     for path in sorted(raw.glob("*.csv")):
+        if exit_status(path.with_suffix(".exit-status")) != "0":
+            continue
         name = re.sub(r"-\d+$", "", path.stem)
         if name.startswith("bench-exec"):
             with path.open(encoding="utf-8") as handle:
-                for row in csv.DictReader(handle):
-                    key = (name, row["mode"])
-                    exec_groups.setdefault(key, []).append(float(row["elapsed_ns"]))
+                records = list(csv.DictReader(handle))
+            if len(records) != 3 or {r.get("mode") for r in records} != {"scalar", "batch", "parallel-batch"}:
+                continue
+            values = [valid_elapsed(row.get("elapsed_ns", "")) for row in records]
+            if any(value is None for value in values):
+                continue
+            for row, value in zip(records, values):
+                key = (name, row["mode"])
+                exec_groups.setdefault(key, []).append(value)
         else:
             m = metrics(path)
-            if "elapsed_ns" in m:
-                groups.setdefault(name, []).append(float(m["elapsed_ns"]))
+            value = valid_elapsed(m.get("elapsed_ns", ""))
+            if value is not None:
+                groups.setdefault(name, []).append(value)
     rows = []
     for name, values in sorted(groups.items()):
         rows.append(summary_row(name, "", values))
     for (name, mode), values in sorted(exec_groups.items()):
         rows.append(summary_row(name, mode, values))
     return rows
+
+
+def valid_elapsed(value):
+    try:
+        value = float(value)
+    except (ValueError, TypeError):
+        return None
+    return value if math.isfinite(value) and value > 0 else None
+
+
+def parallel_matches(path: Path, baseline: Path) -> bool:
+    if any(not p.exists() or exit_status(p.with_suffix(".exit-status")) != "0" for p in (path, baseline)):
+        return False
+    strip = lambda m: {k: v for k, v in m.items() if k != "elapsed_ns" and "workers" not in k}
+    actual, expected = metrics(path), metrics(baseline)
+    required = {"cardinality", "strands", "nexus_error", "endpoint_error", "antipodal_error", "gap_error", "eversion_sign_ok"}
+    return required <= actual.keys() and required <= expected.keys() and strip(actual) == strip(expected)
 
 
 def summary_row(name: str, mode: str, values: list[float]) -> dict:
@@ -131,14 +158,14 @@ def main() -> None:
     out.append(table(rows))
 
     out.append("\n## Parallel audits\n")
-    base = metrics(results / "02-correctness" / "audit-default.csv") if (results / "02-correctness" / "audit-default.csv").exists() else {}
-    strip = lambda m: {k: v for k, v in m.items() if k != "elapsed_ns" and "workers" not in k}
+    baseline = results / "02-correctness" / "audit-default.csv"
     rows = []
     for path in sorted((results / "03-parallel").glob("audit-W*.csv")):
         m = metrics(path)
         rows.append({"run": path.stem, "requested_workers": m.get("requested_workers"),
                      "effective_workers": m.get("effective_workers"),
-                     "identical_to_sequential": str(strip(m) == strip(base))})
+                     "exit_status": exit_status(path.with_suffix(".exit-status")),
+                     "identical_to_sequential": str(parallel_matches(path, baseline))})
     out.append(table(rows))
     obs = results / "03-parallel" / "thread-observation" / "summary.txt"
     if obs.exists():
@@ -152,10 +179,13 @@ def main() -> None:
     out.append(table(rows))
 
     out.append("\n## Performance (generated from raw CSV)\n")
+    out.append("Only successful, complete, finite positive timings enter the statistics. All command exit statuses follow; raw failures remain in the bundle.\n")
+    out.append(table([{ "run": p.stem, "exit_status": exit_status(p.with_suffix(".exit-status")) }
+                      for p in sorted((results / "04-performance" / "raw").glob("*.csv"))]))
     perf = performance(results)
     write_csv(results / "analysis" / "performance_summary.csv", perf)
     out.append(table(perf))
-    effective = int(prov.get("effective_cpus") or 1)
+    effective = float(prov.get("effective_cpus") or 1)
     out.append("\n### Speedup\n")
     if effective < 2:
         out.append("INCONCLUSIVE: fewer than two effective CPUs.\n")

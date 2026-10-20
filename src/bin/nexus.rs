@@ -63,6 +63,7 @@ fn main() -> ExitCode {
 /// Parsed command-line state shared by every subcommand.
 struct Args {
     positional: Vec<String>,
+    supplied: Vec<String>,
     field: FieldSpec,
     ordering: Ordering,
     json: bool,
@@ -75,6 +76,7 @@ struct Args {
 fn parse_args(raw: &[String]) -> Result<Args, String> {
     let mut args = Args {
         positional: Vec::new(),
+        supplied: Vec::new(),
         field: FieldSpec::default(),
         ordering: Ordering::Uniform,
         json: false,
@@ -88,6 +90,7 @@ fn parse_args(raw: &[String]) -> Result<Args, String> {
         let token = raw[index].as_str();
         if token == "--json" {
             args.json = true;
+            args.supplied.push("json".into());
             index += 1;
             continue;
         }
@@ -115,6 +118,7 @@ fn parse_args(raw: &[String]) -> Result<Args, String> {
                 "base-hz" => args.base_hz = Some(number(value, name)?),
                 other => return Err(format!("unknown option `--{other}`")),
             }
+            args.supplied.push(name.to_string());
             index += 2;
         } else {
             args.positional.push(token.to_string());
@@ -122,6 +126,39 @@ fn parse_args(raw: &[String]) -> Result<Args, String> {
         }
     }
     Ok(args)
+}
+
+fn validate_command(command: &str, args: &Args) -> Result<(), String> {
+    let (min, max, field_options, options): (usize, usize, bool, &[&str]) = match command {
+        "audit" => (0, 0, true, &["workers", "json"]),
+        "trace" => (2, 2, true, &[]),
+        "events" => (2, 2, true, &["base-hz"]),
+        "ledger" | "bench" => (1, 1, true, &["json"]),
+        "bench-exec" => (3, 3, true, &[]),
+        "atlas" => (1, 1, true, &["rounds", "json"]),
+        "lattice-verify" => (0, 1, false, &["rounds", "seed", "json"]),
+        "lattice-run" => (2, 2, false, &["seed", "json"]),
+        "sweep" | "version" | "help" | "--help" | "-h" => (0, 0, false, &[]),
+        _ => return Ok(()),
+    };
+    if !(min..=max).contains(&args.positional.len()) {
+        return Err(format!("{command} expects {min}..={max} positional arguments"));
+    }
+    const FIELD: &[&str] = &[
+        "cardinality",
+        "strands",
+        "tracers",
+        "radius",
+        "phase",
+        "twist",
+        "ordering",
+    ];
+    for name in &args.supplied {
+        if !options.contains(&name.as_str()) && !(field_options && FIELD.contains(&name.as_str())) {
+            return Err(format!("--{name} is not supported by {command}"));
+        }
+    }
+    Ok(())
 }
 
 fn number<T: std::str::FromStr>(value: &str, name: &str) -> Result<T, String> {
@@ -203,6 +240,7 @@ fn dispatch() -> Result<(), String> {
         return Ok(());
     };
     let args = parse_args(&raw[1..])?;
+    validate_command(command, &args)?;
     match command.as_str() {
         "audit" => cmd_audit(&args),
         "trace" => cmd_trace(&args),
@@ -351,6 +389,9 @@ fn cmd_bench(args: &Args) -> Result<(), String> {
             checksum += s.bearing + s.pos.x + s.pos.y;
         }
     }
+    if !checksum.is_finite() {
+        return Err("benchmark checksum overflowed; use smaller field values".into());
+    }
     black_box(checksum);
     let elapsed = start.elapsed();
     let evaluations = u128::from(iterations) * u128::from(field.strands());
@@ -427,6 +468,9 @@ fn cmd_bench_exec(args: &Args) -> Result<(), String> {
             }
         }
         flush(&mut jobs)?;
+        if !checksum.is_finite() {
+            return Err("benchmark checksum overflowed; use smaller field values".into());
+        }
         black_box(checksum);
         let elapsed = start.elapsed();
         let requested = match mode {

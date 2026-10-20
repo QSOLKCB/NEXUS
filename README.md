@@ -7,6 +7,13 @@ an ingress point through the exact origin (the *nexus*) to its antipodal
 egress. Every layer above that geometry is built so that an independent
 machine can re-run it and compare bytes, not prose.
 
+## Interactive cuboctahedron
+
+A buildless HTML/CSS/JavaScript/WebGL explorer lives in `site/`: inspect the
+12 vertices and four perfect matchings, then step a six-cell lattice forward
+and reverse it to its seed. See [demo and GitHub Pages setup](docs/WEB_DEMO.md).
+The browser model is checked against complete Rust reference states in CI.
+
 ## What is in the box
 
 | Layer | Module | Guarantee |
@@ -14,7 +21,7 @@ machine can re-run it and compare bytes, not prose.
 | Strand selection | `field` | Exact integer mapping (`floor(iL/N)` via a carry cursor or `u128`) and a 64-bit fixed-point golden ordering. No allocation proportional to `L`. |
 | Transit | `transit` | One branch-free signed-progress formula. Centre is literally zero; endpoints are antipodal bit for bit. |
 | Ternary metadata | `ternary` | `Trit` (inbound / nexus / outbound) and `Lane` (`ordinal mod 3`). Labels over continuous geometry, nothing more. |
-| Execution | `exec` | Scalar, sequential, and order-preserving parallel evaluation on `std` scoped threads with an atomic block cursor. Parallel output equals sequential output exactly. |
+| Execution | `exec` | Scalar, sequential, and order-preserving parallel evaluation on `std` scoped threads with a shared block queue. Parallel output equals sequential output exactly. |
 | Ledgers | `ledger`, `sha256` | Fixed 40-byte canonical records, three lane digests, a stream digest, and a root that binds them with the counts. Own SHA-256, checked against FIPS vectors. |
 | Sonification | `sonify` | Configurable semitone and gain tables; the default is the 432 Hz map. |
 | Audit | `audit` | Worst-case invariant deviations, identical on one thread or many. |
@@ -32,6 +39,8 @@ cargo build --release --locked
 cargo test --locked
 cargo clippy --locked --all-targets -- -D warnings
 cargo doc --locked --no-deps
+node tests/web.mjs
+python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
 Optional GPU mirror (needs a current toolchain and a Vulkan driver):
@@ -60,7 +69,7 @@ nexus lattice-verify 1024 --rounds 16    # CPU forward + inverse restoration
 nexus lattice-run 65536 128              # CPU forward benchmark with census
 ```
 
-Field options accepted everywhere: `--cardinality`, `--strands`, `--tracers`,
+Field options (field commands only): `--cardinality`, `--strands`, `--tracers`,
 `--radius`, `--phase`, `--twist`, `--ordering uniform|golden`.
 
 GPU mirror:

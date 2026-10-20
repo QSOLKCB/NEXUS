@@ -47,11 +47,27 @@ impl EventMap {
     }
 
     fn validate(&self) -> Result<()> {
-        if self.base_hz.is_finite() && self.base_hz > 0.0 {
-            Ok(())
-        } else {
-            Err(Error::Frequency(self.base_hz))
+        if !self.base_hz.is_finite() || self.base_hz <= 0.0 {
+            return Err(Error::Frequency(self.base_hz));
         }
+        if !self.gain_floor.is_finite() || !(0.0..=1.0).contains(&self.gain_floor) {
+            return Err(Error::Spec {
+                name: "gain_floor",
+                requirement: "must be finite and in [0, 1]",
+            });
+        }
+        if self
+            .lane_semitones
+            .iter()
+            .chain(&self.trit_semitones)
+            .any(|v| !v.is_finite())
+        {
+            return Err(Error::Spec {
+                name: "semitones",
+                requirement: "must all be finite",
+            });
+        }
+        Ok(())
     }
 }
 
@@ -72,7 +88,7 @@ pub fn event(field: &Field, map: &EventMap, sample: &Sample) -> Result<Event> {
     let trit_slot = (sample.trit.value() + 1) as usize;
     let semitones = map.lane_semitones[sample.lane.index()] + map.trit_semitones[trit_slot];
     let hz = map.base_hz * (semitones / 12.0).exp2();
-    if !hz.is_finite() {
+    if !hz.is_finite() || hz <= 0.0 {
         return Err(Error::Frequency(hz));
     }
     let normalised = (sample.pos.norm() / field.radius()).clamp(0.0, 1.0);

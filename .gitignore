@@ -1,0 +1,5 @@
+/target/
+/.openai/
+/nexus-verify-*/
+__pycache__/
+*.pyc
