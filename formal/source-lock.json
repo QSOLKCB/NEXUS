@@ -1,0 +1,31 @@
+{
+  "release_tag": "v1.0.0",
+  "release_commit": "24c7b5bb8b158d84e08b10ccc8fdd16b6889b7e4",
+  "sha256": {
+    "Cargo.lock": "a38c9763118e81f64a4f84c6e2791fe5db27d8d0b4d8c693f66b25a6407f35a6",
+    "Cargo.toml": "f2b7a3b218a1ed8e95d7fbd2e83166ca1abf5fbcc8ac9201e077b864155b32a5",
+    "site/app.mjs": "7970bc9841d219a627be189cb653e4fd553b5e905ab539976f34c10a13670254",
+    "site/index.html": "8fdb5ec9284610774ac166ae3b176ce42fb1bb0772f27d25f9a97af4fdbfc0e9",
+    "site/model.mjs": "d6b570f0ebe6a3931647b8dc5381117270b1a666c0d29884086bbd1d7bfad97e",
+    "site/style.css": "541ce97b35aaefd4a6380ea8fff0180c8a869ce664c85b7f7648033be7bd1e96",
+    "site/view.mjs": "68619a87b03c1c323b77426eaddf16f436e189e3fe5585a84a14a950582ac318",
+    "src/audit.rs": "990c3b206e21a98c04b81a2bf5587ecccb331d3a40ef61cc484a13c17a030f34",
+    "src/bin/lattice_gpu.rs": "71a2403178beecb7ac691de432bac1411250493afbbac664a9f8b17fa43e00f4",
+    "src/bin/nexus.rs": "87ed578abe5e08844bffe8e754b7785d619f13953007e4c4e26820239169f062",
+    "src/error.rs": "ac75a4114a360e23e5fe992b736c88be2f179607db9a164c8a5e52460ab8a74f",
+    "src/exec.rs": "b2b9246f4e6d7236f485183bc6031caa352c868d02e28c39d18cf1dd6f8333bf",
+    "src/field.rs": "3d37b5e717036ce079e90184ad7b795ec8cef2eecfc3aed4ec903ae1a91659cb",
+    "src/gpu/lattice.wgsl": "6c5d7498c882e6330bef33b3757b478632d662ee7531d60ecd88b20cf0f18e95",
+    "src/gpu/mod.rs": "6767e4e57e3937fe920be86825cf740c1ebd2b6615e8f82f134551b7156bc435",
+    "src/ledger.rs": "79c591615747d9f2af03ef460f5a4484bb734c6fe806fa7d9bf5f18a0554b493",
+    "src/lib.rs": "34c5cecf18ddf93cc22a4904c5b2a1508477b0bc8eb2cd60efb4b278972f411a",
+    "src/sha256.rs": "207485cdc07953dcd26ebdd61b3018e056d2ba9a08384adf960935e02c654b58",
+    "src/sonify.rs": "e22c1881935aec72862776f6399bc239a6526f37b5561e60537c272bf9353441",
+    "src/ternary.rs": "8790f91b2c521f2828a1dce94acc02485fa29da68b98b8f7b03706e1d53eb297",
+    "src/transit.rs": "29ed9c09799324836f6ff15a8fae3785a90d6121f7d67b656f450c0f66b049bb",
+    "src/ve/atlas.rs": "802f2255a4faf80c26c42fc7becfd21130bb5293dee7dbb0f9b48e2d5e80f446",
+    "src/ve/graph.rs": "39cece65ebf9d03f0d9a24844092236f3cb76155edda99aacdf1153d4455f4b0",
+    "src/ve/lattice.rs": "247f55a5c8ea72b626a3e0c10b271c61fdd719b22b29581f5171cbf5cc19557e",
+    "src/ve/mod.rs": "c3ec8d25fa08a1f302f7807ba85c29fb1dc33ad92e0210868b87c08963577593"
+  }
+}

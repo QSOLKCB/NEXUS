@@ -40,3 +40,22 @@ jobs:
           node --check site/app.mjs
           node --check site/view.mjs
           sha256sum -c MANIFEST.sha256
+  formal:
+    name: Lean proofs and Rust parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Install pinned Lean toolchain manager
+        run: |
+          curl --fail --silent --show-error --location --retry 3 https://raw.githubusercontent.com/leanprover/elan/v4.1.2/elan-init.sh -o "$RUNNER_TEMP/elan-init.sh"
+          sh "$RUNNER_TEMP/elan-init.sh" -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Select Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - name: Check release binding, kernel proofs, axiom dependencies and live parity
+        run: python3 -I scripts/check_formal.py
