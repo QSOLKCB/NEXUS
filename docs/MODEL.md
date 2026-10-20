@@ -9,7 +9,7 @@
 | `P` | tracers | `512` | `P >= 1` |
 | `R` | radius | `0.56` | finite, `> 0` |
 | `theta_0` | phase | `0` | finite |
-| `t` | twist | `1.5` | finite |
+| `t` | twist | `1.5` | finite; `abs(phase) + 2 pi + 2 pi abs(t)` must remain finite |
 
 No data structure proportional to `L` is ever allocated.
 
@@ -53,7 +53,7 @@ psi(s) = -sign(s) * 2 pi t * (1 - |s|)
 P_i(s) = s * R * (cos(theta_i + psi), sin(theta_i + psi))
 ```
 
-Consequences, all verified bit for bit in tests:
+Consequences (signed zero is normalised; radius comparisons use floating-point tolerances):
 
 - `P_i(-1) = I_i` and `P_i(+1) = E_i` (the radial factor is `±R` and
   `psi = 0`);
@@ -92,13 +92,14 @@ tracer_strand(j) = floor(j * N / P),   0 <= j < P
 
 ## Canonical job stream
 
-Benchmarks, ledgers, and atlas censuses use:
+Ledgers and atlas censuses use:
 
 ```text
 job(k) = (ordinal = k mod N, progress = (k mod 1001) / 1000)
 ```
 
-so `p = 0.5` occurs exactly once per 1001 jobs.
+so `p = 0.5` occurs exactly once per 1001 jobs. Benchmarks instead sweep
+strands with progress `((iteration + ordinal) mod 1001) / 1000`.
 
 ## Audit fields
 

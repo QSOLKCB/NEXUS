@@ -10,7 +10,7 @@ outputs independent of any previous runner for the same ideas.
 | Eversion | The signed progress itself, `2p - 1`. |
 | Uniform partition | Incremental carry cursor (`L div N` plus accumulated `L mod N`) for iteration; `u128` only for random access. |
 | Golden ordering | 64-bit fixed-point Kronecker step `0x9E3779B97F4A7C15`; integer-only, no `f64` fract. |
-| Parallelism | Atomic block cursor over the job slice, results stitched by block offset. Not fixed per-thread chunks. |
+| Parallelism | Mutex-protected queue of input blocks paired with disjoint output slices. An atomic counter verifies completion. |
 | Canonical record | 40 bytes, little-endian, tag `0x4E`, trit/lane/ordering bytes first. |
 | Ledger | Three lane digests plus a stream digest bound by a root with per-lane counts; streaming builder. |
 | Sonification | Configurable `EventMap` tables; the 432 Hz map is the default, not hard-wired. |

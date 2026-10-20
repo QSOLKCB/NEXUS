@@ -148,6 +148,12 @@ impl Field {
                 requirement: "must be finite",
             });
         }
+        if !(spec.phase.abs() + TAU + TAU * spec.twist.abs()).is_finite() {
+            return Err(Error::Spec {
+                name: "twist",
+                requirement: "and phase must keep the transit angle finite",
+            });
+        }
         Ok(Self { spec })
     }
 

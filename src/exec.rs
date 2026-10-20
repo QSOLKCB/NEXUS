@@ -5,10 +5,10 @@
 //! Scalar, sequential, and parallel evaluation of transit jobs.
 //!
 //! The parallel path hands fixed-size blocks of jobs to standard-library
-//! scoped threads through one atomic cursor. Each completed block is tagged
-//! with its starting offset and the blocks are stitched back together in
-//! input order, so the parallel result is byte-identical to the sequential
-//! result regardless of scheduling. No external runtime is used.
+//! scoped threads through one mutex-protected queue. Each block is paired
+//! with a disjoint output slice, preserving input order without a gather copy.
+//! The parallel result is byte-identical to the sequential result regardless
+//! of scheduling. No external runtime is used.
 
 #[cfg(not(target_family = "wasm"))]
 use std::sync::atomic::{AtomicUsize, Ordering as Atomic};

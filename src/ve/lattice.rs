@@ -81,7 +81,11 @@ pub fn control(seed: u32, round: u32, cell: u32, face: u32) -> u32 {
 
 /// Increment applied to the target register of an edge, in `{1, 2, 3}`.
 pub fn increment(control_value: u8, control_word: u32, edge: u32, cell: u32) -> u8 {
-    (1 + (u32::from(control_value) + control_word + edge + cell) % 3) as u8
+    (1 + u32::from(control_value)
+        .wrapping_add(control_word)
+        .wrapping_add(edge)
+        .wrapping_add(cell)
+        % 3) as u8
 }
 
 /// Partner of a cell in a given round.
@@ -89,8 +93,10 @@ pub fn partner(cells: u32, round: u32, cell: u32) -> u32 {
     let offset = round & 1;
     if (cell + offset) % 2 == 0 {
         (cell + 1) % cells
+    } else if cell == 0 {
+        cells - 1
     } else {
-        (cell + cells - 1) % cells
+        cell - 1
     }
 }
 
@@ -114,13 +120,24 @@ impl Census {
     pub fn validate(&self, cells: u32) -> Result<()> {
         let cells = u64::from(cells);
         for vertex in 0..VERTICES {
-            let total: u64 = self.vertex_state[vertex * 4..vertex * 4 + 4].iter().sum();
-            if total != cells {
+            let total: u128 = self.vertex_state[vertex * 4..vertex * 4 + 4]
+                .iter()
+                .map(|&v| u128::from(v))
+                .sum();
+            if total != u128::from(cells) {
                 return Err(Error::Lattice("vertex histogram does not sum to the cell count"));
             }
         }
-        if self.totals.iter().sum::<u64>() != cells * VERTICES as u64 {
+        if self.totals.iter().map(|&v| u128::from(v)).sum::<u128>() != u128::from(cells) * VERTICES as u128 {
             return Err(Error::Lattice("aggregate histogram does not sum to the register count"));
+        }
+        for value in 0..4 {
+            let column: u128 = (0..VERTICES)
+                .map(|v| u128::from(self.vertex_state[v * 4 + value]))
+                .sum();
+            if column != u128::from(self.totals[value]) {
+                return Err(Error::Lattice("aggregate histogram disagrees with vertex histograms"));
+            }
         }
         if self.disagreement > cells * EDGES as u64 {
             return Err(Error::Lattice("edge disagreement exceeds the edge population"));
@@ -192,7 +209,14 @@ impl Lattice {
     /// Seed a lattice.
     pub fn seeded(cells: u32, seed: u32) -> Result<Self> {
         validate_request(cells, 1)?;
-        let mut registers = vec![0u8; cells as usize * VERTICES];
+        let len = (cells as usize)
+            .checked_mul(VERTICES)
+            .ok_or(Error::Lattice("state length exceeds address space"))?;
+        let mut registers = Vec::new();
+        registers
+            .try_reserve_exact(len)
+            .map_err(|_| Error::Lattice("unable to allocate lattice state"))?;
+        registers.resize(len, 0u8);
         for cell in 0..cells {
             for vertex in 0..VERTICES as u32 {
                 registers[cell as usize * VERTICES + vertex as usize] = seed_register(seed, cell, vertex);

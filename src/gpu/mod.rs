@@ -31,6 +31,16 @@ const GROUPS_X: u32 = 32_768;
 const REGISTER_GROUP: u32 = 64;
 const TABLE_WORDS: usize = 4 * EDGES + 3 * TRIANGLES;
 
+fn validate_cells(cells: u32) -> Result<()> {
+    validate_request(cells, 1)?;
+    // The largest non-wrapping shader census is 24 disagreements per cell.
+    // Folds wrap intentionally; census counts and register indices must not.
+    if cells > u32::MAX / EDGES as u32 {
+        return Err(Error::Lattice("cells exceed the shader's u32 census capacity"));
+    }
+    Ok(())
+}
+
 /// Flatten the derived cuboctahedron into the shader's table layout.
 pub fn table_words(graph: &Cuboctahedron) -> [u32; TABLE_WORDS] {
     let mut words = [0u32; TABLE_WORDS];
@@ -182,7 +192,7 @@ fn storage_entry(binding: u32, read_only: bool) -> wgpu::BindGroupLayoutEntry {
 impl Lattice {
     /// Open the best Vulkan adapter and allocate resident state for `cells`.
     pub async fn open(cells: u32) -> std::result::Result<Self, String> {
-        validate_request(cells, 1).map_err(|e| e.to_string())?;
+        validate_cells(cells).map_err(|e| e.to_string())?;
         let mut descriptor = wgpu::InstanceDescriptor::new_without_display_handle();
         descriptor.backends = wgpu::Backends::VULKAN;
         let instance = wgpu::Instance::new(descriptor);
@@ -419,14 +429,16 @@ impl Lattice {
                 dispatch(&self.pipelines.compare, current, census_base + 2, register_grid)?;
             }
         }
-        encoder.copy_buffer_to_buffer(&self.census, 0, &self.staging, 0, (REGION_WORDS * REGIONS * 4) as u64);
+        let readback_bytes = (REGION_WORDS * if verify { REGIONS } else { 2 } * 4) as u64;
+        encoder.copy_buffer_to_buffer(&self.census, 0, &self.staging, 0, readback_bytes);
 
         let start = Instant::now();
         self.queue.submit(Some(encoder.finish()));
         let (sender, receiver) = mpsc::channel();
-        self.staging.map_async(wgpu::MapMode::Read, .., move |result| {
-            let _ = sender.send(result);
-        });
+        self.staging
+            .map_async(wgpu::MapMode::Read, ..readback_bytes, move |result| {
+                let _ = sender.send(result);
+            });
         self.device
             .poll(wgpu::PollType::wait_indefinitely())
             .map_err(|e| format!("device poll failed: {e}"))?;
@@ -437,7 +449,7 @@ impl Lattice {
         let words: Vec<u32> = {
             let view = self
                 .staging
-                .get_mapped_range(..)
+                .get_mapped_range(..readback_bytes)
                 .map_err(|e| format!("mapped range failed: {e}"))?;
             view.chunks_exact(4)
                 .map(|c| u32::from_le_bytes([c[0], c[1], c[2], c[3]]))
@@ -540,6 +552,14 @@ pub fn verify(context: &Lattice, rounds: u32, seed: u32) -> std::result::Result<
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shader_counts_cannot_wrap() {
+        let largest = (u32::MAX / EDGES as u32) & !1;
+        assert!(validate_cells(largest).is_ok());
+        assert!(validate_cells(largest + 2).is_err());
+        assert!(validate_cells(u32::MAX - 1).is_err());
+    }
 
     #[test]
     fn shader_parses_and_validates() {

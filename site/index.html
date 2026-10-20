@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Explore NEXUS's cuboctahedron and step a reversible classical lattice forwards and backwards. Native WebGL, no dependencies.">
+  <meta name="theme-color" content="#101214">
+  <title>NEXUS · Cuboctahedron explorer</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <a class="skip" href="#explorer">Skip to explorer</a>
+  <header class="masthead"><a class="wordmark" href="./" aria-label="NEXUS home"><span class="mark" aria-hidden="true">◇</span> NEXUS</a><span class="edition">QSOL–IMC / GEOMETRY LAB</span><a href="https://github.com/QSOLKCB/NEXUS">Source ↗</a></header>
+  <main>
+    <section class="intro"><div><p class="eyebrow">01 / INTERACTIVE MODEL</p><h1>Twelve vertices.<br><span>One connected system.</span></h1><p class="lede">Explore the cuboctahedron behind NEXUS. Inspect its geometry, isolate a perfect matching, then watch a reversible lattice evolve.</p></div><dl class="counts"><div><dt>Vertices</dt><dd>12</dd></div><div><dt>Edges</dt><dd>24</dd></div><div><dt>Faces</dt><dd>14</dd></div></dl></section>
+    <section id="explorer" class="explorer" aria-label="Cuboctahedron explorer">
+      <div class="scene-column">
+        <div class="scene-bar"><div class="switch" role="group" aria-label="Display mode"><button id="structure" aria-pressed="true">Structure</button><button id="lattice" aria-pressed="false">Lattice</button></div><span id="renderer-status" class="small">NATIVE WEBGL</span></div>
+        <div class="viewport"><canvas id="canvas" tabindex="0" aria-label="Rotatable cuboctahedron. Drag or use arrow keys to orbit; plus and minus to zoom; Home to reset."></canvas><div id="labels" class="labels"></div><div class="scene-note"><span class="dot"></span><span id="scene-caption">Coordinate-derived geometry</span></div><p id="webgl-error" role="status" hidden></p></div>
+        <div class="scene-footer"><span>Drag to orbit · Scroll to zoom · Select a vertex</span><button id="reset-view">Reset view ↺</button></div>
+      </div>
+      <aside class="inspector" aria-label="Model controls">
+        <div class="panel-heading"><p class="eyebrow">INSPECT / EXPLORE</p><span class="small">Z₄ REGISTERS</span></div>
+        <div class="control-group"><label for="matching">Edge matching <span>6 disjoint edges</span></label><select id="matching"><option value="-1">All edges</option><option value="0">Matching 0</option><option value="1">Matching 1</option><option value="2">Matching 2</option><option value="3">Matching 3</option><option value="round">Next round's matching</option></select><div class="toggle-row"><label for="faces">Show faces</label><input type="checkbox" id="faces" checked></div></div>
+        <div class="control-group vertex-info"><label for="vertex">Selected vertex</label><select id="vertex"></select><div class="coordinate" id="coordinates">(−1, −1, 0)</div><p class="small">NEIGHBOURS <span id="neighbours"></span></p><p class="small">REGISTER <span id="register"></span></p></div>
+        <div class="control-group"><div class="row"><label for="round">Lattice round</label><output id="round-value" for="round">000 / 128</output></div><input type="range" min="0" max="128" value="0" id="round"><div class="transport"><button id="back" aria-label="Undo one round">− Step</button><button id="play" class="primary" aria-pressed="false">Play</button><button id="forward" aria-label="Advance one round">Step +</button></div><div class="row small plan"><span id="plan">MATCH 0 / FACE 0</span><span id="partner">CELL 0 ↔ 1</span></div></div>
+        <div class="control-group seed-group"><div><label for="cell">Inspect cell</label><select id="cell"><option value="0">Cell 0</option><option value="1">Cell 1</option><option value="2">Cell 2</option><option value="3">Cell 3</option><option value="4">Cell 4</option><option value="5">Cell 5</option></select></div><div><label for="seed">Seed / uint32</label><input id="seed" type="text" inputmode="numeric" value="1313167443" spellcheck="false"></div><button id="apply-seed">Apply seed</button></div>
+        <button id="rewind" class="rewind">Reverse to seed ↶</button><p id="status" class="status" role="status">72 registers · seeded state</p>
+      </aside>
+    </section>
+    <section class="explanation" aria-label="How the model works">
+      <article><span class="section-no">01</span><h2>Geometry from coordinates</h2><p>Twelve permutations of (±1, ±1, 0). Join pairs at squared distance 2: 24 equal edges, eight triangular faces and six squares. Every vertex meets four edges.</p></article>
+      <article><span class="section-no">02</span><h2>Six updates. No collisions.</h2><p>Four perfect matchings partition the edges. Each round selects one matching and updates six target registers modulo 4. A selected triangular face swaps with a neighbouring cell.</p></article>
+      <article><span class="section-no">03</span><h2>Run it back. Exactly.</h2><p>Undo the face swap, then subtract the same increments. The inverse schedule restores all 72 registers across six cells. WebGL draws the geometry; JavaScript runs the integer model.</p></article>
+    </section>
+    <div class="boundary"><span class="eyebrow">MODEL BOUNDARY</span><p>A deterministic classical state machine. Register values are 0–3; this demonstration makes no quantum or physical-substrate claim. The browser model is checked against the Rust reference.</p><a href="https://github.com/QSOLKCB/NEXUS/blob/main/docs/LATTICE.md">Read the lattice contract ↗</a></div>
+  </main>
+  <footer><span>NEXUS / QSOL–IMC</span><span>Open source · MPL–2.0</span><a href="https://github.com/QSOLKCB/NEXUS">Inspect the source ↗</a></footer>
+  <noscript><p class="noscript">JavaScript is required for the interactive explorer. The geometry and model descriptions remain available above.</p></noscript>
+</body>
+</html>

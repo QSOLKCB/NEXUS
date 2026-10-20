@@ -79,15 +79,11 @@ clean_tree
   echo '--- memory ---'; free -h || true
   echo '--- time ---'; /usr/bin/time --version 2>&1 || echo 'usr-bin-time: absent'
 } > "$P/environment.txt" 2>&1
-EFFECTIVE_CPUS="$(python3 - <<'PY'
-import os
-try:
-    print(len(os.sched_getaffinity(0)))
-except Exception:
-    print(os.cpu_count() or 1)
-PY
-)"
+python3 "$RESULTS/analysis/provenance.py" --cpu-capacity-evidence > "$P/cpu-capacity.json"
+EFFECTIVE_CPUS="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["effective_cpus"])' "$P/cpu-capacity.json")"
 printf '%s\n' "$EFFECTIVE_CPUS" > "$P/effective-cpus.txt"
+# Preserve fractional quotas; even a sub-core environment still runs W=1.
+MAX_CPU_WORKERS="$(python3 -c 'import sys; print(max(1, int(float(sys.argv[1]))))' "$EFFECTIVE_CPUS")"
 
 # --- build ----------------------------------------------------------------
 required() {
@@ -151,7 +147,7 @@ run "$C" lattice-verify-4096 lattice-verify 4096 --rounds 64
 run "$C" atlas-1m atlas 1000000 --rounds 16
 
 WORKERS=""
-for W in 1 2 4 8 16; do [ "$W" -le "$EFFECTIVE_CPUS" ] && WORKERS="$WORKERS $W"; done
+for W in 1 2 4 8 16; do [ "$W" -le "$MAX_CPU_WORKERS" ] && WORKERS="$WORKERS $W"; done
 printf '%s\n' "$WORKERS" > "$RESULTS/03-parallel/worker-matrix.txt"
 for W in $WORKERS; do run "$RESULTS/03-parallel" "audit-W$W" audit --workers "$W"; done
 
@@ -180,7 +176,11 @@ while kill -0 "$PID" 2>/dev/null; do
   [ "$T" -gt "$MAX_T" ] && MAX_T="$T"
   sleep 0.02
 done
-wait "$PID" || true
+set +e
+wait "$PID"
+S=$?
+set -e
+printf '%s\n' "$S" > "$RESULTS/03-parallel/thread-observation/audit-W$MAXW.exit-status"
 printf 'command=audit --workers %s --cardinality 4294967296 --strands 16777216\nrequested_workers=%s\nmax_observed_os_threads=%s\nnote=observed threads include the main thread; sampling every 20 ms can miss short-lived workers\n' "$MAXW" "$MAXW" "$MAX_T" \
   > "$RESULTS/03-parallel/thread-observation/summary.txt"
 clean_tree

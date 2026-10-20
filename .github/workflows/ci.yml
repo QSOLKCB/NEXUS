@@ -1,0 +1,42 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  rust:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        toolchain: [stable]
+        include:
+          - os: ubuntu-latest
+            toolchain: 1.82.0
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Select Rust toolchain
+        run: |
+          rustup toolchain install ${{ matrix.toolchain }} --profile minimal
+          rustup default ${{ matrix.toolchain }}
+      - run: cargo test --locked
+      - name: Browser model parity with Rust
+        run: node tests/web.mjs
+      - name: Stable checks
+        if: matrix.os == 'ubuntu-latest' && matrix.toolchain == 'stable'
+        run: |
+          rustup component add rustfmt clippy
+          cargo fmt --all -- --check
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo doc --locked --no-deps
+          cargo test --locked --features gpu
+          python3 -m unittest discover -s tests -p 'test_*.py'
+          node --check site/app.mjs
+          node --check site/view.mjs
+          sha256sum -c MANIFEST.sha256
