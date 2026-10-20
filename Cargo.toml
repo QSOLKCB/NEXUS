@@ -1,0 +1,38 @@
+[package]
+name = "nexus"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.82"
+license = "MPL-2.0"
+description = "Deterministic centre-transit field engine with ternary execution lanes, SHA-256 ledgers, and a reversible cuboctahedral lattice"
+readme = "README.md"
+keywords = ["deterministic", "geometry", "reversible", "ternary", "evidence"]
+categories = ["science", "simulation", "command-line-utilities"]
+
+[features]
+default = []
+gpu = ["dep:wgpu", "dep:pollster"]
+
+[lib]
+crate-type = ["rlib"]
+
+[[bin]]
+name = "nexus"
+path = "src/bin/nexus.rs"
+
+[[bin]]
+name = "nexus-lattice-gpu"
+path = "src/bin/lattice_gpu.rs"
+required-features = ["gpu"]
+
+[dependencies]
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+pollster = { version = "0.4", optional = true }
+wgpu = { version = "30", optional = true, default-features = false, features = ["std", "wgsl", "vulkan"] }
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+opt-level = 3
+panic = "abort"

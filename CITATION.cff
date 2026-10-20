@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+title: "NEXUS: Deterministic Centre-Transit Field Engine with Ternary Lanes, SHA-256 Ledgers, and a Reversible Cuboctahedral Lattice"
+type: software
+version: 1.0.0
+license: MPL-2.0
+authors:
+  - family-names: "<surname>"
+    given-names: "<given names>"
+repository-code: "<repository url>"
+abstract: >-
+  Deterministic Rust engine for centre-transit fields with exact integer
+  strand selection, ternary execution metadata, order-preserving parallel
+  evaluation, lane-separated SHA-256 ledgers, sonification controls, an
+  invariant audit, a twelve-direction cuboctahedral atlas, and an exactly
+  reversible coupled Z_4 lattice with a CPU reference and an optional
+  Vulkan/WGSL mirror.
