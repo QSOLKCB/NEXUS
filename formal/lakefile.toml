@@ -1,0 +1,11 @@
+name = "nexus_formal"
+version = "0.1.0"
+defaultTargets = ["Nexus"]
+moreLeanArgs = ["-DwarningAsError=true"]
+
+[[lean_lib]]
+name = "Nexus"
+
+[[lean_exe]]
+name = "parity"
+root = "Main"

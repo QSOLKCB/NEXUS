@@ -3,3 +3,4 @@
 /nexus-verify-*/
 __pycache__/
 *.pyc
+/formal/.lake/

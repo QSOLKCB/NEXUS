@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add a pinned Lean 4 formalisation, 71 named theorems, release source binding,
+  live Rust/Lean conformance checks and a dedicated CI proof job.
+
 - Reject unused CLI options, extra positional arguments and nonfinite benchmark checksums.
 - Reject overflowing transit angles, invalid audio tables and frequency underflow.
 - Validate census marginals and malformed counts without arithmetic panics.

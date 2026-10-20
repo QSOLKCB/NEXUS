@@ -14,6 +14,17 @@ A buildless HTML/CSS/JavaScript/WebGL explorer lives in `site/`: inspect the
 and reverse it to its seed. See [demo and GitHub Pages setup](docs/WEB_DEMO.md).
 The browser model is checked against complete Rust reference states in CI.
 
+## Lean formalisation
+
+`formal/` contains 71 named Lean 4 theorems for the discrete model and
+selected algebraic contracts, including restoration of every lattice state
+for any round count. CI checks the proofs, their axiom dependencies, the
+v1.0.0 source binding, and 1,456 live Rust/Lean comparison rows.
+
+See [proof coverage and reproduction](docs/FORMALISATION.md) for theorem
+names and boundaries. Rust compilation, floating-point/libm behaviour,
+SHA-256 security, and GPU execution remain separate verification obligations.
+
 ## What is in the box
 
 | Layer | Module | Guarantee |
